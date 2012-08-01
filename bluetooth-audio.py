@@ -246,7 +246,7 @@ def ChooseAudioSink():
     
     
 def LinkSourceAndSink(source, sink):
-    cmd_link = "pactl load-module module-loopback source=%s sink=%s" % \
+    cmd_link = "pactl load-module module-loopback latency_msec=1500  source=%s sink=%s" % \
         (source, sink)
     print "Linking Source and Sink"
     print cmd_link
