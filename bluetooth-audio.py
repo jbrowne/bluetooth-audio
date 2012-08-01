@@ -209,7 +209,7 @@ def ChooseAudioSource():
         print "Using default source:\n%s" % (sources[0][1])
         source = sources[0][0]
     else:
-        raise Excpetion ("No sources available")
+        raise Exception ("No sources available")
 
     return source
 
@@ -223,18 +223,18 @@ def ChooseAudioSink():
     sinks = ParseSinkSourceList(output)
 
     if len(sinks) > 1:
-        sinks.insert(0,"<< Cancel >>", "<<cancel>>")
+        sinks.insert(0,("<< Cancel >>", "<<cancel>>"))
         if len(sinks) > 1:
             idx = -1
             while idx not in range(len(sinks)):
                 print "Which sink would you like to use?"
                 for i, name in enumerate(sinks):
-                    print "%s:\t%s" % (i, name)
+                    print "%s:\t%s" % (i, name[1])
                 idx = int(raw_input("--> "))
             if idx == 0:
                 raise Exception ("Exit by user")
             else:
-                sink = sinks[idx]
+                sink = sinks[idx][0]
     elif len(sinks) == 1:
         print "Using default sink\n%s" % (sinks[0][1])
         sink = sinks[0][0]
