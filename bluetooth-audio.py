@@ -53,6 +53,8 @@ import time
 import commands
 
 bt_config_file = '/etc/bluetooth/audio.conf'
+bt_prefs_file = ".btaudio"
+link_latency = 500 #ms latency for choppy bt connections
 
 def CheckEnableSource():
     "Step 2. Returns True if the file is changed and needs to be reloaded"
@@ -246,8 +248,9 @@ def ChooseAudioSink():
     
     
 def LinkSourceAndSink(source, sink):
-    cmd_link = "pactl load-module module-loopback latency_msec=1500  source=%s sink=%s" % \
-        (source, sink)
+    global link_latency
+    cmd_link = "pactl load-module module-loopback latency_msec=%s  source=%s sink=%s" % \
+        (link_latency, source, sink)
     print "Linking Source and Sink"
     print cmd_link
     print "~~~~~~~~~~~~~~~~~~~"
@@ -274,13 +277,50 @@ def Setup():
     if CheckEnableSource():
         ReloadBlueTooth()
 
+def SavePreferences(prefs, fname = None):
+    """Save preferences of form {'sink' : <str>, 'source' : <str> }"""
+    global bt_prefs_file
+    if fname is not None:
+        fp = open(fname, "w")
+    else:
+        homeDir = os.path.expanduser("~")
+        fp = open(os.path.join(homeDir, bt_prefs_file), "w") 
+
+    fp.write("DEFAULT_SINK=%s\n" % (prefs.get('sink', '')) )
+    fp.write("DEFAULT_SOURCE=%s\n" % (prefs.get('source', '')) )
+    fp.close()
+    
+def LoadPreferences():
+    global bt_prefs_file
+    homeDir = os.path.expanduser("~")
+    prefs = {'sink' : None,
+             'source' : None}
+    if bt_prefs_file in os.listdir(homeDir):
+        fp = open(os.path.join(homeDir, bt_prefs_file), "r")
+        for line in fp.readlines():
+            if line.startswith("DEFAULT_SINK"):
+                prefs['sink'] = line.split('=')[1].strip()
+            if line.startswith("DEFAULT_SOURCE"):
+                prefs['source'] = line.split('=')[1].strip()
+        fp.close()
+        return prefs
+    else:
+        return None
+    
 def main(args):
     if len(args) > 1 and args[1].lower() == "setup":
         Setup()
+    prefs = LoadPreferences()
+    if prefs is None or ( len(args) > 1 and args[1].lower() == "reload" ):
     #PromptForPairing()
-    DBusConnect()
-    source = ChooseAudioSource()
-    sink = ChooseAudioSink()
+        DBusConnect()
+        source = ChooseAudioSource()
+        sink = ChooseAudioSink()
+        SavePreferences( {'sink' : sink, 'source': source })
+    else:
+        print "Using previous settings"
+        source = prefs['source']
+        sink = prefs['sink']
     try:
         moduleNumber = LinkSourceAndSink(source, sink)
         while True:
